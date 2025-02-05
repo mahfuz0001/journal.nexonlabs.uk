@@ -4,9 +4,9 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
-  const { id } = params;
+  const { id } = context.params;
 
   try {
     const user = await currentUser();
@@ -24,7 +24,6 @@ export async function GET(
       return NextResponse.json({ error: "Entry not found" }, { status: 404 });
     }
 
-    // Check if the entry belongs to the current user
     if (entry.userId !== user.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -41,9 +40,9 @@ export async function GET(
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
-  const { id } = params;
+  const { id } = context.params;
 
   try {
     const user = await currentUser();
@@ -61,7 +60,6 @@ export async function PATCH(
       return NextResponse.json({ error: "Entry not found" }, { status: 404 });
     }
 
-    // Check if the entry belongs to the current user
     if (entry.userId !== user.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -93,9 +91,9 @@ export async function PATCH(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
-  const { id } = params;
+  const { id } = context.params;
 
   try {
     const user = await currentUser();
@@ -113,7 +111,6 @@ export async function DELETE(
       return NextResponse.json({ error: "Entry not found" }, { status: 404 });
     }
 
-    // Check if the entry belongs to the current user
     if (entry.userId !== user.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
