@@ -1,0 +1,163 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model JournalEntry {
+  id          String    @id @default(cuid())
+  title       String
+  content     String    @db.Text
+  mood        String?
+  tags        String[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  userId      String
+  isPublic    Boolean   @default(false)
+  location    String?
+  weather     String?
+  sentiment   Float?    // Sentiment score from -1 to 1
+  themes      String[]  // Detected themes from content
+  mediaUrls   String[]  // URLs to attached media
+  audioUrl    String?   // URL to voice recording
+  isArchived  Boolean   @default(false)
+  isFavorite  Boolean   @default(false)
+  wordCount   Int       @default(0)
+  readTime    Int       @default(0) // Estimated read time in minutes
+  comments    Comment[]
+  likes       Like[]
+  shares      Share[]
+  collaborators UserOnEntry[]
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([tags])
+  @@index([themes])
+  @@index([mood])
+  @@index([sentiment])
+}
+
+model UserProfile {
+  id              String    @id
+  displayName     String?
+  bio             String?   @db.Text
+  avatarUrl       String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  journalCount    Int       @default(0)
+  totalWordCount  Int       @default(0)
+  streakCount     Int       @default(0)
+  lastWrittenAt   DateTime?
+  preferences     Json?     // User preferences as JSON
+  writingGoal     Int?      // Daily writing goal in words
+  isPublic        Boolean   @default(false)
+  collaborations  UserOnEntry[]
+  comments        Comment[]
+  likes           Like[]
+  shares          Share[]
+  followers       Follow[]    @relation("Following")
+  following       Follow[]    @relation("Followers")
+
+  @@index([id])
+  @@index([displayName])
+}
+
+model Comment {
+  id          String      @id @default(cuid())
+  content     String      @db.Text
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  userId      String
+  entryId     String
+  entry       JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  user        UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentId    String?
+  parent      Comment?    @relation("CommentReplies", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies     Comment[]   @relation("CommentReplies")
+
+  @@index([userId])
+  @@index([entryId])
+}
+
+model Like {
+  id          String      @id @default(cuid())
+  createdAt   DateTime    @default(now())
+  userId      String
+  entryId     String
+  entry       JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  user        UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, entryId])
+  @@index([userId])
+  @@index([entryId])
+}
+
+model Share {
+  id          String      @id @default(cuid())
+  createdAt   DateTime    @default(now())
+  userId      String
+  entryId     String
+  entry       JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  user        UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([entryId])
+}
+
+model Follow {
+  id          String      @id @default(cuid())
+  createdAt   DateTime    @default(now())
+  followerId  String
+  followingId String
+  follower    UserProfile @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
+  following   UserProfile @relation("Followers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+model UserOnEntry {
+  userId      String
+  entryId     String
+  role        String      // "OWNER", "EDITOR", "VIEWER"
+  createdAt   DateTime    @default(now())
+  user        UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entry       JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  @@id([userId, entryId])
+  @@index([userId])
+  @@index([entryId])
+}
+
+model WritingPrompt {
+  id          String    @id @default(cuid())
+  content     String    @db.Text
+  category    String    // "DAILY", "SEASONAL", "CHALLENGE", "MENTAL_HEALTH"
+  tags        String[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  isActive    Boolean   @default(true)
+  startDate   DateTime?
+  endDate     DateTime?
+
+  @@index([category])
+  @@index([tags])
+}
+
+model Notification {
+  id          String    @id @default(cuid())
+  userId      String
+  type        String    // "COMMENT", "LIKE", "SHARE", "FOLLOW", "REMINDER"
+  content     String
+  isRead      Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  metadata    Json?     // Additional notification data as JSON
+
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+} 
