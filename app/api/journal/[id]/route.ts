@@ -2,14 +2,11 @@ import { NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 
-interface RouteParams {
-  params: {
-    id: string;
-  };
-}
-
-export async function GET(request: Request, { params }: RouteParams) {
-  const { id } = await params;
+export async function GET(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  const { id } = params;
 
   try {
     const user = await currentUser();
@@ -42,8 +39,11 @@ export async function GET(request: Request, { params }: RouteParams) {
   }
 }
 
-export async function PATCH(request: Request, { params }: RouteParams) {
-  const { id } = await params;
+export async function PATCH(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  const { id } = params;
 
   try {
     const user = await currentUser();
@@ -91,8 +91,11 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   }
 }
 
-export async function DELETE(request: Request, { params }: RouteParams) {
-  const { id } = await params;
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  const { id } = params;
 
   try {
     const user = await currentUser();
