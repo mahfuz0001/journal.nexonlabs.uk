@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 
-export default async function handler(
+export async function handler(
   req: NextRequest,
   { params }: Pick<{ params: { id: string } }, "params">
 ) {
