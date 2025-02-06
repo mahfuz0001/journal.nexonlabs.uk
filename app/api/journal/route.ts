@@ -1,62 +1,44 @@
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { currentUser } from "@clerk/nextjs/server";
 
-interface RouteParams {
-  id: string; // Define the expected dynamic route parameter
-}
-
-// GET handler
-export async function GET(
-  request: Request,
-  { params }: { params: RouteParams }
-) {
+export async function GET(request: NextRequest) {
   try {
     const user = await currentUser();
-    const userId = user?.id;
-
-    if (!userId) {
-      return new NextResponse("Unauthorized", { status: 401 });
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Extract journal entry ID from the dynamic route parameters
-    const { id } = params;
-
-    const entry = await prisma.journalEntry.findUnique({
-      where: { id },
+    const entries = await prisma.journalEntry.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
     });
 
-    if (!entry) {
-      return new NextResponse("Not Found", { status: 404 });
-    }
-
-    // Ensure the entry belongs to the current user
-    if (entry.userId !== userId) {
-      return new NextResponse("Unauthorized", { status: 401 });
-    }
-
-    return NextResponse.json(entry);
+    return NextResponse.json(entries);
   } catch (error) {
-    console.error("[JOURNAL_GET]", error);
-    return new NextResponse("Internal Error", { status: 500 });
+    console.error("[JOURNAL_GET_ALL]", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }
 
-// POST handler
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const user = await currentUser();
-    const userId = user?.id;
-
-    if (!userId) {
-      return new NextResponse("Unauthorized", { status: 401 });
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
     const { title, content, mood, tags } = body;
 
     if (!title || !content) {
-      return new NextResponse("Missing required fields", { status: 400 });
+      return NextResponse.json(
+        { error: "Missing required fields" },
+        { status: 400 }
+      );
     }
 
     const entry = await prisma.journalEntry.create({
@@ -65,13 +47,16 @@ export async function POST(request: Request) {
         content,
         mood: mood || null,
         tags: tags || [],
-        userId,
+        userId: user.id,
       },
     });
 
     return NextResponse.json(entry);
   } catch (error) {
     console.error("[JOURNAL_POST]", error);
-    return new NextResponse("Internal Error", { status: 500 });
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }

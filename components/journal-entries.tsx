@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Icons } from "@/components/icons";
 import { motion } from "framer-motion";
+// import { toast } from "@/hooks/use-toast";
 
 interface JournalEntry {
   id: string;
@@ -48,23 +49,34 @@ const item = {
   show: { opacity: 1, y: 0 },
 };
 
-async function getJournalEntries(userId: string) {
-  const res = await fetch(`/api/journal?userId=${userId}`);
+async function getJournalEntries(): Promise<JournalEntry[]> {
+  const res = await fetch("/api/journal");
   if (!res.ok) {
     throw new Error("Failed to fetch entries");
   }
   return res.json();
 }
 
-export function JournalEntries({ userId }: { userId: string }) {
+export function JournalEntries() {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    getJournalEntries(userId)
+    getJournalEntries()
       .then(setEntries)
+      .catch((err) => {
+        console.error("Failed to fetch journal entries:", err);
+        setError("Failed to load journal entries. Please try again later.");
+        // toast({
+        //   title: "Error",
+        //   description:
+        //     "Failed to load journal entries. Please try again later.",
+        //   variant: "destructive",
+        // });
+      })
       .finally(() => setLoading(false));
-  }, [userId]);
+  }, []);
 
   if (loading) {
     return (
@@ -73,6 +85,19 @@ export function JournalEntries({ userId }: { userId: string }) {
           <Skeleton key={i} className="h-[320px] rounded-xl" />
         ))}
       </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="flex flex-col items-center justify-center p-12 text-center bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-800 dark:to-gray-900">
+        <CardTitle className="text-2xl mb-2 text-gray-900 dark:text-gray-100">
+          Oops! Something went wrong
+        </CardTitle>
+        <CardDescription className="text-gray-600 dark:text-gray-400">
+          {error}
+        </CardDescription>
+      </Card>
     );
   }
 
@@ -102,16 +127,14 @@ export function JournalEntries({ userId }: { userId: string }) {
       {entries.map((entry) => (
         <motion.div key={entry.id} variants={item}>
           <Link href={`/journal/${entry.id}`}>
-            <Card className="h-[320px] overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-2 bg-white dark:bg-black">
+            <Card className="h-[320px] overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-2 bg-white dark:bg-gray-800">
               <CardHeader>
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
                         <Icons.calendar className="h-4 w-4" />
-                        <span>
-                          {formatDate(entry.createdAt, "MMM d, yyyy")}
-                        </span>
+                        <span>{formatDate(entry.createdAt)}</span>
                       </div>
                       {entry.mood && (
                         <span
