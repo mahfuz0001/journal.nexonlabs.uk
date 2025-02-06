@@ -1,82 +1,129 @@
+import { type NextRequest, NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
-import { NextApiRequest, NextApiResponse } from "next";
 
-const handler = async (req: NextApiRequest, res: NextApiResponse) => {
-  const { id } = req.query;
+export async function GET({ params }: { params: { id: string } }) {
+  const { id } = params;
 
   try {
     const user = await currentUser();
     if (!user) {
-      return res.status(401).json({ error: "Unauthorized" });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (req.method === "GET") {
-      const entry = await prisma.journalEntry.findUnique({
-        where: { id: id as string },
-      });
+    const entry = await prisma.journalEntry.findUnique({
+      where: {
+        id,
+      },
+    });
 
-      if (!entry) {
-        return res.status(404).json({ error: "Entry not found" });
-      }
-
-      if (entry.userId !== user.id) {
-        return res.status(401).json({ error: "Unauthorized" });
-      }
-
-      return res.status(200).json(entry);
-    } else if (req.method === "PATCH") {
-      const entry = await prisma.journalEntry.findUnique({
-        where: { id: id as string },
-      });
-
-      if (!entry) {
-        return res.status(404).json({ error: "Entry not found" });
-      }
-
-      if (entry.userId !== user.id) {
-        return res.status(401).json({ error: "Unauthorized" });
-      }
-
-      const body = await req.body;
-      const { title, content, mood, tags } = body;
-
-      const updatedEntry = await prisma.journalEntry.update({
-        where: { id: id as string },
-        data: {
-          title: title || entry.title,
-          content: content || entry.content,
-          mood: mood || entry.mood,
-          tags: tags || entry.tags,
-        },
-      });
-
-      return res.status(200).json(updatedEntry);
-    } else if (req.method === "DELETE") {
-      const entry = await prisma.journalEntry.findUnique({
-        where: { id: id as string },
-      });
-
-      if (!entry) {
-        return res.status(404).json({ error: "Entry not found" });
-      }
-
-      if (entry.userId !== user.id) {
-        return res.status(401).json({ error: "Unauthorized" });
-      }
-
-      await prisma.journalEntry.delete({
-        where: { id: id as string },
-      });
-
-      return res.status(200).json({ message: "Entry deleted successfully" });
-    } else {
-      return res.status(405).json({ error: "Method not allowed" });
+    if (!entry) {
+      return NextResponse.json({ error: "Entry not found" }, { status: 404 });
     }
+
+    if (entry.userId !== user.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    return NextResponse.json(entry);
   } catch (error) {
-    console.error("[JOURNAL_HANDLER_ERROR]", error);
-    return res.status(500).json({ error: "Internal Server Error" });
+    console.error("[JOURNAL_GET_BY_ID]", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
-};
+}
 
-export { handler as GET, handler as PATCH, handler as DELETE };
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const { id } = params;
+
+  try {
+    const user = await currentUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const entry = await prisma.journalEntry.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!entry) {
+      return NextResponse.json({ error: "Entry not found" }, { status: 404 });
+    }
+
+    if (entry.userId !== user.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { title, content, mood, tags } = body;
+
+    const updatedEntry = await prisma.journalEntry.update({
+      where: {
+        id,
+      },
+      data: {
+        title: title || entry.title,
+        content: content || entry.content,
+        mood: mood || entry.mood,
+        tags: tags || entry.tags,
+      },
+    });
+
+    return NextResponse.json(updatedEntry);
+  } catch (error) {
+    console.error("[JOURNAL_UPDATE]", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const { id } = params;
+
+  try {
+    const user = await currentUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const entry = await prisma.journalEntry.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!entry) {
+      return NextResponse.json({ error: "Entry not found" }, { status: 404 });
+    }
+
+    if (entry.userId !== user.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    await prisma.journalEntry.delete({
+      where: {
+        id,
+      },
+    });
+
+    return NextResponse.json({ message: "Entry deleted successfully" });
+  } catch (error) {
+    console.error("[JOURNAL_DELETE]", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
+  }
+}
