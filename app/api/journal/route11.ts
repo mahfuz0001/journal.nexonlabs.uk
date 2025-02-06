@@ -2,7 +2,11 @@ import { type NextRequest, NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 
-export async function GET({ params }: { params: { id: string } }) {
+// Handler for GET
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   const { id } = params;
 
   try {
@@ -12,9 +16,7 @@ export async function GET({ params }: { params: { id: string } }) {
     }
 
     const entry = await prisma.journalEntry.findUnique({
-      where: {
-        id,
-      },
+      where: { id },
     });
 
     if (!entry) {
@@ -27,7 +29,7 @@ export async function GET({ params }: { params: { id: string } }) {
 
     return NextResponse.json(entry);
   } catch (error) {
-    console.error("[JOURNAL_GET_BY_ID]", error);
+    console.error("[JOURNAL_GET_BY_ID_ERROR]", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }
@@ -35,6 +37,7 @@ export async function GET({ params }: { params: { id: string } }) {
   }
 }
 
+// Handler for PATCH
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -48,9 +51,7 @@ export async function PATCH(
     }
 
     const entry = await prisma.journalEntry.findUnique({
-      where: {
-        id,
-      },
+      where: { id },
     });
 
     if (!entry) {
@@ -65,9 +66,7 @@ export async function PATCH(
     const { title, content, mood, tags } = body;
 
     const updatedEntry = await prisma.journalEntry.update({
-      where: {
-        id,
-      },
+      where: { id },
       data: {
         title: title || entry.title,
         content: content || entry.content,
@@ -78,7 +77,7 @@ export async function PATCH(
 
     return NextResponse.json(updatedEntry);
   } catch (error) {
-    console.error("[JOURNAL_UPDATE]", error);
+    console.error("[JOURNAL_PATCH_ERROR]", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }
@@ -86,6 +85,7 @@ export async function PATCH(
   }
 }
 
+// Handler for DELETE
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -99,9 +99,7 @@ export async function DELETE(
     }
 
     const entry = await prisma.journalEntry.findUnique({
-      where: {
-        id,
-      },
+      where: { id },
     });
 
     if (!entry) {
@@ -113,14 +111,12 @@ export async function DELETE(
     }
 
     await prisma.journalEntry.delete({
-      where: {
-        id,
-      },
+      where: { id },
     });
 
     return NextResponse.json({ message: "Entry deleted successfully" });
   } catch (error) {
-    console.error("[JOURNAL_DELETE]", error);
+    console.error("[JOURNAL_DELETE_ERROR]", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }
