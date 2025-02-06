@@ -40,6 +40,8 @@ import {
   Search,
   SortAsc,
   Archive,
+  Lock,
+  TrendingUp,
 } from "lucide-react";
 
 export type Icon = LucideIcon;
@@ -85,4 +87,6 @@ export const Icons = {
   search: Search,
   sort: SortAsc,
   archive: Archive,
+  lock: Lock,
+  trendingUp: TrendingUp,
 };

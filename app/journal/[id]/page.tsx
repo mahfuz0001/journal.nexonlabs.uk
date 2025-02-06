@@ -24,7 +24,7 @@ interface PageProps {
 }
 
 export default async function JournalEntryPage({ params }: PageProps) {
-  const { id } = params;
+  const { id } = await params;
 
   const user = await currentUser();
 
