@@ -1,51 +1,51 @@
-import { type NextRequest, NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
+import { NextApiRequest, NextApiResponse } from "next";
 
-export async function handler(
-  req: NextRequest,
-  { params }: Pick<{ params: { id: string } }, "params">
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
 ) {
-  const { id } = params;
+  const { id } = req.query;
 
   try {
     const user = await currentUser();
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return res.status(401).json({ error: "Unauthorized" });
     }
 
     if (req.method === "GET") {
       const entry = await prisma.journalEntry.findUnique({
-        where: { id },
+        where: { id: id as string },
       });
 
       if (!entry) {
-        return NextResponse.json({ error: "Entry not found" }, { status: 404 });
+        return res.status(404).json({ error: "Entry not found" });
       }
 
       if (entry.userId !== user.id) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return res.status(401).json({ error: "Unauthorized" });
       }
 
-      return NextResponse.json(entry);
+      return res.status(200).json(entry);
     } else if (req.method === "PATCH") {
       const entry = await prisma.journalEntry.findUnique({
-        where: { id },
+        where: { id: id as string },
       });
 
       if (!entry) {
-        return NextResponse.json({ error: "Entry not found" }, { status: 404 });
+        return res.status(404).json({ error: "Entry not found" });
       }
 
       if (entry.userId !== user.id) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return res.status(401).json({ error: "Unauthorized" });
       }
 
-      const body = await req.json();
+      const body = await req.body;
       const { title, content, mood, tags } = body;
 
       const updatedEntry = await prisma.journalEntry.update({
-        where: { id },
+        where: { id: id as string },
         data: {
           title: title || entry.title,
           content: content || entry.content,
@@ -54,36 +54,30 @@ export async function handler(
         },
       });
 
-      return NextResponse.json(updatedEntry);
+      return res.status(200).json(updatedEntry);
     } else if (req.method === "DELETE") {
       const entry = await prisma.journalEntry.findUnique({
-        where: { id },
+        where: { id: id as string },
       });
 
       if (!entry) {
-        return NextResponse.json({ error: "Entry not found" }, { status: 404 });
+        return res.status(404).json({ error: "Entry not found" });
       }
 
       if (entry.userId !== user.id) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return res.status(401).json({ error: "Unauthorized" });
       }
 
       await prisma.journalEntry.delete({
-        where: { id },
+        where: { id: id as string },
       });
 
-      return NextResponse.json({ message: "Entry deleted successfully" });
+      return res.status(200).json({ message: "Entry deleted successfully" });
     } else {
-      return NextResponse.json(
-        { error: "Method not allowed" },
-        { status: 405 }
-      );
+      return res.status(405).json({ error: "Method not allowed" });
     }
   } catch (error) {
     console.error("[JOURNAL_HANDLER_ERROR]", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 }
