@@ -2,10 +2,7 @@ import { currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { NextApiRequest, NextApiResponse } from "next";
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const { id } = req.query;
 
   try {
@@ -80,4 +77,6 @@ export default async function handler(
     console.error("[JOURNAL_HANDLER_ERROR]", error);
     return res.status(500).json({ error: "Internal Server Error" });
   }
-}
+};
+
+export { handler as GET, handler as PATCH, handler as DELETE };
